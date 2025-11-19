@@ -1,48 +1,53 @@
 """
-Database Schemas
+Database Schemas for Freelancer Manager
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Each Pydantic model represents a collection in MongoDB. The collection name is the lowercase of the class name.
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+- Client -> "client"
+- Project -> "project"
+- TimeLog -> "timelog"
+- Invoice -> "invoice"
+- Payment -> "payment"
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
+from datetime import date
 
-# Example schemas (replace with your own):
+class Client(BaseModel):
+    name: str = Field(..., description="Client or company name")
+    email: Optional[str] = Field(None, description="Primary contact email")
+    phone: Optional[str] = Field(None, description="Primary contact phone")
+    notes: Optional[str] = Field(None, description="Additional details about the client")
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class Project(BaseModel):
+    name: str = Field(..., description="Project name")
+    client_id: Optional[str] = Field(None, description="Related client id (string ObjectId)")
+    hourly_rate: Optional[float] = Field(None, ge=0, description="Hourly rate for this project")
+    status: Literal["planned", "active", "paused", "completed"] = Field("active", description="Project status")
+    notes: Optional[str] = Field(None, description="Project notes")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class TimeLog(BaseModel):
+    project_id: str = Field(..., description="Related project id (string ObjectId)")
+    client_id: Optional[str] = Field(None, description="Related client id (string ObjectId)")
+    date: date = Field(..., description="Work date")
+    hours: float = Field(..., gt=0, description="Hours worked")
+    description: Optional[str] = Field(None, description="Description of work performed")
+    hourly_rate: Optional[float] = Field(None, ge=0, description="Hourly rate used for this entry")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Invoice(BaseModel):
+    client_id: str = Field(..., description="Client id (string ObjectId)")
+    project_id: Optional[str] = Field(None, description="Project id (string ObjectId)")
+    number: Optional[str] = Field(None, description="Invoice number")
+    amount: float = Field(..., ge=0, description="Invoice total amount")
+    due_date: Optional[date] = Field(None, description="Due date")
+    status: Literal["draft", "sent", "paid", "overdue"] = Field("draft", description="Invoice status")
+    notes: Optional[str] = Field(None, description="Invoice notes")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Payment(BaseModel):
+    invoice_id: Optional[str] = Field(None, description="Invoice id (string ObjectId)")
+    client_id: Optional[str] = Field(None, description="Client id (string ObjectId)")
+    amount: float = Field(..., ge=0, description="Payment amount")
+    method: Optional[str] = Field(None, description="Payment method (bank, card, cash, etc.)")
+    date: date = Field(..., description="Payment date")
+    notes: Optional[str] = Field(None, description="Payment notes")
